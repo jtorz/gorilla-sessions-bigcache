@@ -1,17 +1,18 @@
-package gsm
+package gsb
 
 import (
 	"encoding/base32"
-	"github.com/gorilla/securecookie"
-	"github.com/gorilla/sessions"
 	"net/http"
 	"strings"
+
+	"github.com/gorilla/securecookie"
+	"github.com/gorilla/sessions"
 )
 
 // NewDumbMemorySessionStoreWithValueStorer return a new dumb in-memory
 // map and no expiration backed by a ValueStorer.  Good for local
 // development so you don't have to run
-// memcached on your laptop just to fire up
+// bigcached on your laptop just to fire up
 // your app and hack away.
 // A ValueStorer is used to store an encrypted sessionID. The encrypted sessionID is used to access
 // the dumb in-memory map and get the session values.
@@ -34,16 +35,16 @@ func NewDumbMemorySessionStoreWithValueStorer(valueStorer ValueStorer) *DumbMemo
 	}
 }
 
-// Sessions implemented with a dumb in-memory
+// NewDumbMemorySessionStore Sessions implemented with a dumb in-memory
 // map and no expiration.  Good for local
 // development so you don't have to run
-// memcached on your laptop just to fire up
+// bigcached on your laptop just to fire up
 // your app and hack away.
 func NewDumbMemorySessionStore() *DumbMemoryStore {
 	return NewDumbMemorySessionStoreWithValueStorer(&CookieStorer{})
 }
 
-// DumbMemoryStore stores sessions in memcache
+// DumbMemoryStore stores sessions in bigcache
 //
 type DumbMemoryStore struct {
 	Codecs      []securecookie.Codec
@@ -115,7 +116,7 @@ func (s *DumbMemoryStore) Save(r *http.Request, w http.ResponseWriter,
 	return nil
 }
 
-// save writes encoded session.Values using the memcache client
+// save writes encoded session.Values using the bigcache client
 func (s *DumbMemoryStore) save(session *sessions.Session) error {
 	encoded, err := securecookie.EncodeMulti(session.Name(), session.Values,
 		s.Codecs...)

@@ -1,4 +1,4 @@
-package gsm
+package gsb
 
 import (
 	"encoding/base64"

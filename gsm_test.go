@@ -1,24 +1,28 @@
-package gsm
+package gsb
 
 import (
 	"fmt"
-	"github.com/bradfitz/gomemcache/memcache"
-	"github.com/memcachier/mc"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"testing"
+	"time"
+
+	"github.com/allegro/bigcache"
 )
 
 // FIXME: need unit tests for the different StoreMethods
 
-func TestMainGomemcache(t *testing.T) {
+func TestMainGobigcache(t *testing.T) {
 
 	doRun := func(method StoreMethod, listenConfig string) {
 
-		memcacheClient := memcache.New("localhost:11211")
-		// fmt.Printf("memcacheClient = %v\n", memcacheClient)
-		sessionStore := NewMemcacheStore(memcacheClient, "TestMain_", []byte("example123"))
+		bigcacheClient, err := bigcache.NewBigCache(bigcache.DefaultConfig(1 * time.Minute))
+		if err != nil {
+			t.Fatal(err)
+		}
+		// fmt.Printf("bigcacheClient = %v\n", bigcacheClient)
+		sessionStore := NewBigcacheStore(bigcacheClient, "TestMain_", []byte("example123"))
 		sessionStore.StoreMethod = StoreMethod(method)
 		sessionStore.Logging = 1
 
@@ -91,97 +95,20 @@ func TestMainGomemcache(t *testing.T) {
 
 }
 
-func TestMainMc(t *testing.T) {
-
-	doRun := func(method StoreMethod, listenConfig string) {
-
-		memcacheClient := mc.NewMC("localhost:11211", "", "")
-		defer memcacheClient.Quit()
-		// fmt.Printf("memcacheClient = %v\n", memcacheClient)
-		sessionStore := NewMemcacherStore(memcacheClient, "TestMainBinray_", []byte("example123"))
-		sessionStore.StoreMethod = StoreMethod(method)
-		sessionStore.Logging = 1
-
-		http.HandleFunc("/testBinray"+string(method), func(w http.ResponseWriter, r *http.Request) {
-			// fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
-
-			session, _ := sessionStore.Get(r, "example")
-
-			storeval := r.FormValue("store")
-			if len(storeval) > 0 {
-				session.Values["thevalue"] = storeval
-			} else {
-				storeval, _ = session.Values["thevalue"].(string)
-			}
-
-			err := session.Save(r, w)
-			if err != nil {
-				fmt.Printf("Error while saving session: %v\n", err)
-			}
-
-			fmt.Fprintf(w, "%s", storeval)
-
-		})
-
-		// run the server
-		go http.ListenAndServe(listenConfig, nil)
-
-		// now do some tests as a client make sure things work as expected
-
-		jar, err := cookiejar.New(nil)
-		if err != nil {
-			panic(err)
-		}
-		httpClient := &http.Client{
-			Jar: jar,
-		}
-
-		doReq := func(u string) string {
-			resp, err := httpClient.Get(u)
-			if err != nil {
-				panic(err)
-			}
-			defer resp.Body.Close()
-			b, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				panic(err)
-
-			}
-
-			fmt.Printf("Got Set-Cookie: %s\n", resp.Header.Get("Set-Cookie"))
-
-			return string(b)
-		}
-
-		v := doReq("http://localhost" + listenConfig + "/testBinray" + string(method) + "?store=blah")
-		if v != "blah" {
-			t.Fatalf("Expected v=blah but got v='%s'\n", v)
-		}
-
-		v = doReq("http://localhost" + listenConfig + "/testBinray" + string(method))
-		if v != "blah" {
-			t.Fatalf("Expected session to give us v=blah but got v='%s'\n", v)
-		}
-
-	}
-
-	doRun(StoreMethodSecureCookie, ":18201")
-	doRun(StoreMethodGob, ":18202")
-	doRun(StoreMethodJson, ":18203")
-
-}
-
 // TestMainHeaderStorer tests storing the secure sessionID in a configurable http HEADER field
-// and then fetching the session information via Memcache.
+// and then fetching the session information via Bigcache.
 func TestMainHeaderStorer(t *testing.T) {
 	headerName := "X-TEST-HEADER"
 
 	doRun := func(method StoreMethod, listenConfig string) {
 
 		headerStorer := &HeaderStorer{HeaderFieldName: headerName}
-		memcacheClient := memcache.New("localhost:11211")
-		// fmt.Printf("memcacheClient = %v\n", memcacheClient)
-		sessionStore := NewMemcacheStoreWithValueStorer(memcacheClient, headerStorer, "TestMain_", []byte("example123"))
+		bigcacheClient, err := bigcache.NewBigCache(bigcache.DefaultConfig(1 * time.Minute))
+		if err != nil {
+			t.Fatal(err)
+		}
+		// fmt.Printf("bigcacheClient = %v\n", bigcacheClient)
+		sessionStore := NewBigcacheStoreWithValueStorer(bigcacheClient, headerStorer, "TestMain_", []byte("example123"))
 		sessionStore.StoreMethod = StoreMethod(method)
 		sessionStore.Logging = 1
 
@@ -231,7 +158,7 @@ func TestMainHeaderStorer(t *testing.T) {
 		}
 
 		// the first request should return a headerKey and headerValue, which contain a securely encrypted sessionID.
-		// subsequent requests should sent this sessionID along so the server can fetch the session from the memcache store.
+		// subsequent requests should sent this sessionID along so the server can fetch the session from the bigcache store.
 		req, _ := http.NewRequest("GET", "http://localhost"+listenConfig+"/testHeaderStorer"+string(method)+"?store=blah", nil)
 		v, headerKey, headerValue := doReq(req)
 		if v != "blah" {

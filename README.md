@@ -1,7 +1,9 @@
-gorilla-sessions-memcache
+gorilla-sessions-bigcache
 =========================
 
-Memcache session support for Gorilla Web Toolkit.  
+Fork github.com/bradleypeabody/gorilla-sessions-memcache
+
+[Bigcache](github.com/allegro/bigcache) session support for Gorilla Web Toolkit.
 
 Dependencies
 ------------
@@ -10,34 +12,26 @@ The usual gorilla stuff:
 
     go get github.com/gorilla/sessions
 
-For an ASCII memcache client:
+For an ASCII bigcache client:
 
-    go get github.com/bradfitz/gomemcache/memcache
-
-For a binary memcache client with SASL authentication:
-
-    go get github.com/memcachier/mc
+    go get "github.com/allegro/bigcache"
 
 Usage
 -----
 
 ```go
 import (
-  "github.com/bradfitz/gomemcache/memcache"
-  // or
-  "github.com/memcachier/mc"
-  gsm "github.com/bradleypeabody/gorilla-sessions-memcache"
+  "github.com/allegro/bigcache"
+  gsb "github.com/jtorz/gorilla-sessions-bigcache"
 )
 
 ...
 
-// set up your memcache client
-memcacheClient := gsm.NewGoMemcacher(memcache.New("localhost:11211"))
-// or
-memcacheClient := mc.NewMC("localhost:11211", "username", "password")
+// set up your bigcache client
+bigcacheClient := gsb.NewGoBigcacher(bigcache.New("localhost:11211"))
 
 // set up your session store
-store := gsm.NewMemcacherStore(memcacheClient, "session_prefix_", []byte("secret-key-goes-here"))
+store := gsb.NewBigCacherStore(bigcacheClient, "session_prefix_", []byte("secret-key-goes-here"))
 
 // and the rest of it is the same as any other gorilla session handling:
 func MyHandler(w http.ResponseWriter, r *http.Request) {
@@ -49,17 +43,15 @@ func MyHandler(w http.ResponseWriter, r *http.Request) {
 
 
 ...
-// you can also setup a MemCacheStore, which does not rely on the browser accepting cookies.
+// you can also setup a BigcacheStore, which does not rely on the browser accepting cookies.
 // this means, your client has to extract and send a configurable http Headerfield manually.
 // e.g.
 
-// set up your memcache client
-memcacheClient := gsm.NewGoMemcacher(memcache.New("localhost:11211"))
-// or
-memcacheClient := mc.NewMC("localhost:11211", "username", "password")
+// set up your bigcache client
+bigcacheClient := gsb.NewGoBigcacher(bigcache.New("localhost:11211"))
 
 // set up your session store relying on a http Headerfield: `X-CUSTOM-HEADER`
-store := gsm.NewMemcacherStoreWithValueStorer(memcacheClient, &gsm.HeaderStorer{HeaderFieldName:"X-CUSTOM-HEADER"}, "session_prefix_", []byte("secret-key-goes-here"))
+store := gsb.NewBigCacherStoreWithValueStorer(bigcacheClient, &gsb.HeaderStorer{HeaderFieldName:"X-CUSTOM-HEADER"}, "session_prefix_", []byte("secret-key-goes-here"))
 
 // and the rest of it is the same as any other gorilla session handling:
 // The client has to send the session information in the header-field: `X-CUSTOM-HEADER`
@@ -74,11 +66,11 @@ func MyHandler(w http.ResponseWriter, r *http.Request) {
 Storage Methods
 ---------------
 
-I've added a few different methods of storage of the session data in memcache.  You
+I've added a few different methods of storage of the session data in bigcache.  You
 use them by setting the StoreMethod field.
 
 * SecureCookie - uses the default securecookie encoding.  Values are more secure
-  as they are not readable from memcache without the secret key.
+  as they are not readable from bigcache without the secret key.
 * Gob - uses the Gob encoder directly without any post processing.  Faster.
   Result is Gob's usual binary gibber (not human readable)
 * Json - uses the Json Marshaller.  Result is human readable, slower but still
@@ -89,31 +81,34 @@ use them by setting the StoreMethod field.
 Example:
 
 ```go
-store := gsm.NewMemcacherStore(memcacheClient, "session_prefix_", []byte("..."))
+store := gsb.NewBigCacherStore(bigcacheClient, "session_prefix_", []byte("..."))
 // do one of these:
-store.StoreMethod = gsm.StoreMethodSecureCookie // default, more secure
-store.StoreMethod = gsm.StoreMethodGob // faster
-store.StoreMethod = gsm.StoreMethodJson // human readable
-							// (but watch out, it munches your types
-							// to JSON compatible stuff)
+store.StoreMethod = gsb.StoreMethodSecureCookie // default, more secure
+store.StoreMethod = gsb.StoreMethodGob // faster
+store.StoreMethod = gsb.StoreMethodJson // human readable
+              // (but watch out, it munches your types
+              // to JSON compatible stuff)
 ```
 
 Logging
 -------
 
-Logging is available by setting the Logging field to > 0 after making your MemcacheStore.
+Logging is available by setting the Logging field to > 0 after making your BigcacheStore.
 
 ```go
-store := gsm.NewMemcacherStore(memcacheClient, "session_prefix_", []byte("..."))
+store := gsb.NewBigCacherStore(bigcacheClient, "session_prefix_", []byte("..."))
 store.Logging = 1
 ```
 
-That will output (using `log.Printf`) data about each session read/written from/to memcache.
+That will output (using `log.Printf`) data about each session read/written from/to bigcache.
 Useful for debugging
+
+<!--
 
 Things to Know
 --------------
-
+ markdownlint-disable MD000
 * No official release has been done of this package but it should be stable for production use.
 
-* You can also call NewDumbMemorySessionStore() for local development without a memcache server (it's a stub that just stuffs your session data in a map - definitely do not use this for anything but local dev and testing).
+* You can also call NewDumbMemorySessionStore() for local development without a bigcache server (it's a stub that just stuffs your session data in a map - definitely do not use this for anything but local dev and testing).
+-->

@@ -1,4 +1,4 @@
-package gsm
+package gsb
 
 import (
 	"fmt"
@@ -127,7 +127,7 @@ func TestStubHeaderStorer(t *testing.T) {
 	}
 
 	// the first request should return a headerKey and headerValue, which contain a securely encrypted sessionID.
-	// subsequent requests should sent this sessionID along so the server can fetch the session from the memcache store.
+	// subsequent requests should sent this sessionID along so the server can fetch the session from the bigcache store.
 	req, _ := http.NewRequest("GET", "http://localhost:18210/testdumbHeaderStorer?store=blah", nil)
 	v, headerKey, headerValue := doReq(req)
 	if v != "blah" {

@@ -1,41 +1,39 @@
-package gsm
+package gsb
 
 import (
-	"github.com/bradfitz/gomemcache/memcache"
+	"github.com/allegro/bigcache"
 )
 
-// Memcacher is the interface gsm uses to interact with the memcache client
-type Memcacher interface {
-	Get(key string) (val string, flags uint32, cas uint64, err error)
-	Set(key, val string, flags, exp uint32, ocas uint64) (cas uint64, err error)
+// BigCacher is the interface gsb uses to interact with the bigcache client
+type BigCacher interface {
+	Get(key string) (string, error)
+	Set(key, val string, exp uint32, ocas uint64) (cas uint64, err error)
 }
 
-
-// GoMemcacher is a wrapper to the gomemcache client that implements the
-// Memcacher interface
-type GoMemcacher struct {
-  client *memcache.Client
+// GoBigcacher is a wrapper to the gobigcache client that implements the
+// BigCacher interface
+type GoBigcacher struct {
+	client *bigcache.BigCache
 }
 
-// NewGoMemcacher returns a wrapped gomemcache client that implements the
-// Memcacher interface
-func NewGoMemcacher(c *memcache.Client) *GoMemcacher {
+// NewGoBigcacher returns a wrapped gobigcache client that implements the
+// BigCacher interface
+func NewGoBigcacher(c *bigcache.BigCache) *GoBigcacher {
 	if c == nil {
-		panic("Cannot have nil memcache client")
+		panic("Cannot have nil bigcache client")
 	}
-	return &GoMemcacher{client: c}
+	return &GoBigcacher{client: c}
 }
 
-func (gm *GoMemcacher) Get(key string) (val string, flags uint32, cas uint64, err error) {
-	if it, err := gm.client.Get(key); err == nil{
-		return string(it.Value), it.Flags, 0, err
-	}else{
-		return "", 0, 0, err
+func (gm *GoBigcacher) Get(key string) (string, error) {
+	if v, err := gm.client.Get(key); err == nil {
+		return string(v), err
+	} else {
+		return "", err
 	}
 }
 
-
-func (gm *GoMemcacher) Set(key, val string, flags, exp uint32, ocas uint64) (cas uint64, err error) {
-	err = gm.client.Set(&memcache.Item{Key: key, Value: []byte(val), Expiration: int32(exp), Flags: flags})
+func (gm *GoBigcacher) Set(key, val string, exp uint32, ocas uint64) (cas uint64, err error) {
+	err = gm.client.Set(key, []byte(val))
 	return ocas, err
 }
