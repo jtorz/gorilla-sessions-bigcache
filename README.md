@@ -20,46 +20,97 @@ Usage
 -----
 
 ```go
+package main
+
 import (
+  "fmt"
+  "net/http"
+  "time"
+
   "github.com/allegro/bigcache/v2"
   gsb "github.com/jtorz/gorilla-sessions-bigcache"
 )
 
-...
-
-// set up your bigcache client
-bigcacheClient := gsb.NewGoBigcacher(bigcache.New("localhost:11211"))
-
-// set up your session store
-store := gsb.NewBigCacherStore(bigcacheClient, "session_prefix_", []byte("secret-key-goes-here"))
-
-// and the rest of it is the same as any other gorilla session handling:
-func MyHandler(w http.ResponseWriter, r *http.Request) {
-  session, _ := store.Get(r, "session-name")
-  session.Values["foo"] = "bar"
-  session.Values[42] = 43
-  session.Save(r, w)
+func main() {
+  bigcacheClient, err := bigcache.NewBigCache(bigcache.DefaultConfig(10 * time.Minute))
+  if err != nil {
+    panic(err)
+  }
+  store := gsb.NewBigcacheStore(bigcacheClient, "session_prefix_", []byte("secret"))
+  runServer(store)
 }
 
+func runServer(store *gsb.BigcacheStore) {
+  http.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
+    session, err := store.Get(r, "session-name")
+    if err != nil {
+      fmt.Fprintf(w, "Error: %v", err)
+      return
+    }
+    fmt.Fprintf(w, "Got: %v", session)
+  })
 
-...
-// you can also setup a BigcacheStore, which does not rely on the browser accepting cookies.
-// this means, your client has to extract and send a configurable http Headerfield manually.
-// e.g.
+  http.HandleFunc("/set", func(w http.ResponseWriter, r *http.Request) {
+    session, err := store.Get(r, "session-name")
+    if err != nil {
+      fmt.Fprintf(w, "Error: %v", err)
+      return
+    }
+    session.Values["foo"] = "bar"
+    session.Values[42] = 43
+    session.Save(r, w)
+    fmt.Fprint(w, "ok")
+  })
+  http.ListenAndServe(":8080", nil)
+}
+```
 
-// set up your bigcache client
-bigcacheClient := gsb.NewGoBigcacher(bigcache.New("localhost:11211"))
+You can also setup a BigcacheStore, which does not rely on the browser accepting cookies.
+this means, your client has to extract and send a configurable http Headerfield manually.
 
-// set up your session store relying on a http Headerfield: `X-CUSTOM-HEADER`
-store := gsb.NewBigCacherStoreWithValueStorer(bigcacheClient, &gsb.HeaderStorer{HeaderFieldName:"X-CUSTOM-HEADER"}, "session_prefix_", []byte("secret-key-goes-here"))
+```go
+package main
 
-// and the rest of it is the same as any other gorilla session handling:
-// The client has to send the session information in the header-field: `X-CUSTOM-HEADER`
-func MyHandler(w http.ResponseWriter, r *http.Request) {
-  session, _ := store.Get(r, "session-name")
-  session.Values["foo"] = "bar"
-  session.Values[42] = 43
-  session.Save(r, w)
+import (
+  "fmt"
+  "net/http"
+  "time"
+
+  "github.com/allegro/bigcache/v2"
+  gsb "github.com/jtorz/gorilla-sessions-bigcache"
+)
+
+func main() {
+  bigcacheClient, err := bigcache.NewBigCache(bigcache.DefaultConfig(10 * time.Minute))
+  if err != nil {
+    panic(err)
+  }
+  store := gsb.NewBigCacherStoreWithValueStorer(gsb.NewGoBigcacher(bigcacheClient), &gsb.HeaderStorer{HeaderFieldName: "X-CUSTOM-HEADER"}, "session_prefix_", []byte
+  runServer(store)
+}
+
+func runServer(store *gsb.BigcacheStore) {
+  http.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
+    session, err := store.Get(r, "session-name")
+    if err != nil {
+      fmt.Fprintf(w, "Error: %v", err)
+      return
+    }
+    fmt.Fprintf(w, "Got: %v", session)
+  })
+
+  http.HandleFunc("/set", func(w http.ResponseWriter, r *http.Request) {
+    session, err := store.Get(r, "session-name")
+    if err != nil {
+      fmt.Fprintf(w, "Error: %v", err)
+      return
+    }
+    session.Values["foo"] = "bar"
+    session.Values[42] = 43
+    session.Save(r, w)
+    fmt.Fprint(w, "ok")
+  })
+  http.ListenAndServe(":8080", nil)
 }
 ```
 
