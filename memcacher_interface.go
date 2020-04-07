@@ -1,7 +1,7 @@
 package gsb
 
 import (
-	"github.com/allegro/bigcache"
+	"github.com/allegro/bigcache/v2"
 )
 
 // BigCacher is the interface gsb uses to interact with the bigcache client

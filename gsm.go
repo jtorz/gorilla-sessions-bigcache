@@ -11,12 +11,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/allegro/bigcache"
+	"github.com/allegro/bigcache/v2"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 )
 
-// NewBigcacheStoreWithValueStorer returns a new BigcacheStore backed by a ValueStorer.
+// NewBigCacherStoreWithValueStorer returns a new BigcacheStore backed by a ValueStorer.
 // You need to provide the bigcache client that
 // implements the BigCacher interface and
 // an optional prefix for the keys we store.
@@ -55,7 +55,7 @@ func NewBigCacherStore(client BigCacher, keyPrefix string, keyPairs ...[]byte) *
 
 // NewBigcacheStoreWithValueStorer returns a new BigcacheStore backed by a ValueStorer.
 // You need to provide the gobigcache client
-// (github.com/bradfitz/gobigcache/bigcache) and
+// (github.com/allegro/bigcache) and
 // an optional prefix for the keys we store.
 // A ValueStorer is used to store an encrypted sessionID. The encrypted sessionID is used to access
 // bigcache and get the session values.
@@ -64,7 +64,7 @@ func NewBigcacheStoreWithValueStorer(client *bigcache.BigCache, valueStorer Valu
 }
 
 // NewBigcacheStore returns a new BigcacheStore for the
-// gobigcache client (github.com/bradfitz/gobigcache/bigcache).
+// gobigcache client (github.com/allegro/bigcache).
 // You also need to provider an optional prefix for the keys we store.
 func NewBigcacheStore(client *bigcache.BigCache, keyPrefix string, keyPairs ...[]byte) *BigcacheStore {
 	return NewBigCacherStore(NewGoBigcacher(client), keyPrefix, keyPairs...)
@@ -239,9 +239,6 @@ func (s *BigcacheStore) save(session *sessions.Session) error {
 	default:
 		panic("Unknown StoreMethod: " + string(s.StoreMethod))
 	}
-
-	panic("Unreachable")
-	return nil
 }
 
 // load reads a file and decodes its content into session.Values.
@@ -309,7 +306,4 @@ func (s *BigcacheStore) load(session *sessions.Session) error {
 		panic("Unknown StoreMethod: " + string(s.StoreMethod))
 
 	}
-
-	panic("Unreachable")
-	return nil
 }

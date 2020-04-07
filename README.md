@@ -14,14 +14,14 @@ The usual gorilla stuff:
 
 For an ASCII bigcache client:
 
-    go get "github.com/allegro/bigcache"
+    go get "github.com/allegro/bigcache/v2"
 
 Usage
 -----
 
 ```go
 import (
-  "github.com/allegro/bigcache"
+  "github.com/allegro/bigcache/v2"
   gsb "github.com/jtorz/gorilla-sessions-bigcache"
 )
 

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/allegro/bigcache"
+	"github.com/allegro/bigcache/v2"
 )
 
 // FIXME: need unit tests for the different StoreMethods
